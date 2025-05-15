@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
                     ProjectPickerScreen { projectId ->
                         // Callback when user picks or creates a project
                         startActivity(
-                            Intent(this, MapActivity::class.java)
+                            Intent(this, LeafletActivity::class.java)
                                 .putExtra("EXTRA_PROJECT_ID", projectId)
                         )
                     }

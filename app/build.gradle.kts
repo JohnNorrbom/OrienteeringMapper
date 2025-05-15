@@ -40,8 +40,6 @@ android {
 }
 
 dependencies {
-    implementation("com.mapbox.mapboxsdk:mapbox-sdk-geojson:5.8.0")
-    implementation("org.maplibre.gl:android-sdk:11.8.8")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
