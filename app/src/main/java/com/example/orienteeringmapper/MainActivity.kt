@@ -1,5 +1,6 @@
 package com.example.orienteeringmapper
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,6 +14,21 @@ import androidx.compose.ui.unit.dp
 import com.example.orienteeringmapper.ui.theme.OrienteeringMapperTheme
 import java.util.*
 import androidx.compose.ui.Alignment
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
+import java.io.File
+import android.util.Log
+
+object ImportState {
+    var lastSvgPath: String? = null
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,18 +55,27 @@ class MainActivity : ComponentActivity() {
 fun ProjectPickerScreen(
     onProjectSelected: (projectId: String) -> Unit
 ) {
-    // TODO: Replace this stub list with your real project-loading logic
-    val existingProjects = remember { listOf("Trail-Map A", "Forest-Loop") }
-
+    val context = LocalContext.current
+    val existingProjects = remember { listOf("Demo project") }
     var dialogOpen by remember { mutableStateOf(false) }
+
+    // Launcher for file picker
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            // You could parse file name/type here
+            val projectId = importFileAndCreateProject(context, uri)
+            onProjectSelected(projectId)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Button(onClick = { dialogOpen = true }) {
             Text("Open Project…")
         }
-
         if (dialogOpen) {
-            val items = existingProjects + "➕ New Project"
+            val items = existingProjects + "📂 Import File…"
             AlertDialog(
                 onDismissRequest = { dialogOpen = false },
                 title = { Text("Select or Create Project") },
@@ -60,14 +85,22 @@ fun ProjectPickerScreen(
                             TextButton(
                                 onClick = {
                                     dialogOpen = false
-                                    val projectId = if (idx < existingProjects.size) {
-                                        existingProjects[idx]
-                                    } else {
-                                        UUID.randomUUID().toString()
+                                    when {
+                                        label.contains("Import") -> {
+                                            filePickerLauncher.launch(arrayOf(
+                                                "application/octet-stream",
+                                                "image/svg+xml",
+                                                "*/*" // fallback
+                                            ))
+                                        }
+                                        else -> {
+                                            onProjectSelected(existingProjects[idx])
+                                        }
                                     }
-                                    onProjectSelected(projectId)
                                 },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Text(label)
                             }
@@ -78,4 +111,34 @@ fun ProjectPickerScreen(
             )
         }
     }
+}
+fun importFileAndCreateProject(context: Context, uri: Uri): String {
+    val projectId = UUID.randomUUID().toString()
+
+    val cursor = context.contentResolver.query(uri, null, null, null, null)
+    var originalName = ""
+    val mimeType = context.contentResolver.getType(uri) ?: ""
+    cursor?.use {
+        if (it.moveToFirst()) {
+            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (nameIndex >= 0) originalName = it.getString(nameIndex)
+        }
+    }
+    val extension = originalName.substringAfterLast('.', mimeType.substringAfterLast('/'))
+    val destFileName = "project_${projectId}.$extension"
+    val dest = File(context.filesDir, destFileName)
+
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        dest.outputStream().use { output -> input.copyTo(output) }
+    }
+    // If SVG, remember for Leaflet overlay
+    if (extension.equals("svg", ignoreCase = true)) {
+        ImportState.lastSvgPath = dest.absolutePath
+    }
+    // Log details
+    Log.d("Import", "ProjectID: $projectId")
+    Log.d("Import", "Source URI: $uri")
+    Log.d("Import", "Original Name: $originalName, MIME: $mimeType")
+    Log.d("Import", "Saved To: ${dest.absolutePath}")
+    return projectId
 }

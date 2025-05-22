@@ -4,11 +4,12 @@ let tempPoints = [];
 // Leaflet map setup
 const map = L.map('map', {
     center: [0, 0],
-    zoom: 8,
+    zoom: 16,
     zoomControl: false,
     attributionControl: false
 });
 map.doubleClickZoom.disable();
+L.control.scale().addTo(map);
 
 // Button function handlers (called from Android via WebView)
 function addPoint() {
@@ -49,7 +50,6 @@ function toggleMode(mode) {
         tempPoints = [];
     }
 }
-
 // Map click event
 map.on('click', function (e) {
 const latlng = e.latlng;
@@ -57,8 +57,9 @@ if (!drawMode) return;
 
 switch (drawMode) {
     case 'point':
-        L.circleMarker([latlng.lat, latlng.lng], {
-            radius: 4,           // ~4px to approximate a 0.4mm symbol at standard display DPI
+    // 205 Large stone
+        L.circle([latlng.lat, latlng.lng], {
+            radius: 5,
             color: 'black',
             fillColor: 'black',
             fillOpacity: 1,
@@ -66,13 +67,14 @@ switch (drawMode) {
         }).addTo(map);
         break;
     case 'line':
+    // 505 Footpath
         tempPoints.push(latlng);
         if (tempPoints.length >= 2) {
             L.polyline(tempPoints, {
                 color: 'black',
-                weight: 2,        // pixel width of the line (~0.25 mm print equivalent)
-                dashArray: '8, 8', // dash (px), gap (px)
-                lineCap: 'butt',   // no rounding at the end
+                weight: 2,
+                dashArray: '8, 8',
+                lineCap: 'butt',
             }).addTo(map);
         }
         break;
@@ -93,7 +95,7 @@ switch (drawMode) {
             }
             break;
         case 'triangle':
-            const offset = 1; // triangle size
+            const offset = 0.0003; // triangle size
             const triangle = [
                 [latlng.lat + offset, latlng.lng],
                 [latlng.lat - offset, latlng.lng - offset],
