@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "ocad2geojson": "^2.1.14"
+  },
+  "name": "assets",
+  "version": "1.0.0",
+  "description": "",
+  "main": "drawing_tools.js",
+  "devDependencies": {
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1",
+    "worker-loader": "^3.0.8"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode production"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
